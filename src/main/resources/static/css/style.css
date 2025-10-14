@@ -21,6 +21,9 @@ body {
     margin-bottom: 2rem;
     text-align: center;
 }
+.sidebar a{
+    text-decoration: none;
+}
 
 .sidebar ul {
     list-style: none;

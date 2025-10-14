@@ -1,24 +1,51 @@
 package com.springboot.springproject.config;
 
+import com.springboot.springproject.auth.handler.OAuth2LoginSuccessHandler;
+import com.springboot.springproject.auth.jwt.JwtAuthenticationFilter;
+import com.springboot.springproject.auth.service.CustomOAuth2UserService;
+import com.springboot.springproject.auth.service.CustomOidcUserService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
+@EnableWebSecurity
 public class SecurityConfig {
 
-    @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http
-                .csrf(csrf -> csrf.disable())        // CSRF 비활성화 (API 테스트용)
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/", "/index", "/css/**", "/js/**", "/images/**").permitAll()
-                        .anyRequest().permitAll()    // 모든 요청 허용
-                )
-                .formLogin(form -> form.disable())   // 기본 로그인 페이지 비활성화
-                .httpBasic(httpBasic -> httpBasic.disable()); // 기본 인증 비활성화
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
+    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
+        this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+    }
+
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http,
+                                                   OAuth2LoginSuccessHandler successHandler, CustomOAuth2UserService customOAuth2UserService, CustomOidcUserService customOidcUserService) throws Exception {
+        http
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/","/css/**", "/js/**").permitAll()
+                        .requestMatchers("/auth/login").permitAll()
+                        .anyRequest().authenticated()
+                )
+                .oauth2Login(oauth2 -> oauth2
+                        .loginPage("/auth/login")
+                        .userInfoEndpoint(userInfo -> userInfo
+                                .userService(customOAuth2UserService) // 여기서 연결
+                                .oidcUserService(customOidcUserService)
+                        )
+                        .successHandler(successHandler) // JWT 발급 후 리디렉션
+
+                )
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .logout(logout -> logout
+                        .logoutUrl("/auth/logout")
+                        .logoutSuccessUrl("/") // 로그아웃 후 리디렉션
+                        .deleteCookies("JSESSIONID", "JWT_TOKEN")
+                );;
         return http.build();
     }
+
 }
