@@ -6,6 +6,7 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -27,14 +28,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
 
-        String path = request.getRequestURI();
-
-        // 인증이 필요한 경로만 JWT 체크
-        if (!path.startsWith("/crud") && !path.startsWith("/kafka") && !path.startsWith("/ci")) {
-            filterChain.doFilter(request, response);
-            return;
-        }
-
         String token = null;
         if (request.getCookies() != null) {
             for (Cookie cookie : request.getCookies()) {
@@ -46,9 +39,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         if (token != null) {
-            String username = jwtProvider.getEmail(token);
+            String email = jwtProvider.getEmail(token);
+            String provider = jwtProvider.getProvider(token);
+            String role = jwtProvider.getRole(token);
+
             UsernamePasswordAuthenticationToken auth =
-                    new UsernamePasswordAuthenticationToken(username, null, List.of());
+                    new UsernamePasswordAuthenticationToken(email + "_" + provider, null, List.of(new SimpleGrantedAuthority(role))
+                    );
             SecurityContextHolder.getContext().setAuthentication(auth);
         }
 
