@@ -6,6 +6,7 @@ import com.springboot.springproject.auth.service.CustomOAuth2UserService;
 import com.springboot.springproject.auth.service.CustomOidcUserService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.web.SecurityFilterChain;
@@ -25,9 +26,16 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http,
                                                    OAuth2LoginSuccessHandler successHandler, CustomOAuth2UserService customOAuth2UserService, CustomOidcUserService customOidcUserService) throws Exception {
         http
+                .csrf(csrf -> csrf
+                        .ignoringRequestMatchers("/api/**")  // REST API 요청만 CSRF 무시
+                )
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/","/css/**", "/js/**").permitAll()
-                        .requestMatchers("/auth/login").permitAll()
+                        .requestMatchers("/", "/css/**", "/js/**").permitAll()
+                        .requestMatchers("/auth/login", "/auth/check").permitAll()
+                        .requestMatchers("/crud", "/kafka", "/ci").permitAll()
+                        .requestMatchers("/error", "/error/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/board/**").permitAll()
+                        .requestMatchers("/api/board").authenticated()
                         .anyRequest().authenticated()
                 )
                 .oauth2Login(oauth2 -> oauth2
