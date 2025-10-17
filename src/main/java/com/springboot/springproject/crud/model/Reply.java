@@ -1,12 +1,16 @@
 package com.springboot.springproject.crud.model;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity
+@Getter
+@Setter
 public class Reply {
 
     @Id
@@ -26,6 +30,9 @@ public class Reply {
     private String content;
     private String authorProvider;
     private String authorEmail;
+    private String authorId;
 
     private LocalDateTime createdAt = LocalDateTime.now();
+    private LocalDateTime deletedAt;
+
 }

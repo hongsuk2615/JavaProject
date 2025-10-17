@@ -7,6 +7,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <link th:href="@{/css/style.css}" rel="stylesheet">
+    <script th:src="@{/js/common.js}"></script>
 </head>
 <body>
 <div class="sidebar">
@@ -31,7 +32,6 @@
             <th>제목</th>
             <th>작성자</th>
             <th>작성일</th>
-            <th>관리</th>
         </tr>
         </thead>
         <tbody id="board-body">
@@ -41,46 +41,37 @@
 </div>
 </body>
 <script>
-    async function loadPosts() {
+    async function loadBoards() {
         try {
             const response = await fetch('/api/board'); // REST API 호출
-            const posts = await response.json();
+            const boards = await response.json();
 
             const tbody = document.getElementById('board-body');
             tbody.innerHTML = '';
 
-            posts.forEach(post => {
+            boards.forEach(board => {
                 const tr = document.createElement('tr');
+
+                const authorCell = document.createElement('td');
+                authorCell.appendChild(createAuthorElement(board.authorEmail, board.authorProvider));
+
                 tr.innerHTML = `
-                    <td>${post.id}</td>
-                    <td onclick="window.location.href = \`/crud/board/content/${post.id}\`">${post.title}</td>
-                    <td>${post.authorEmail}</td>
-                    <td>${new Date(post.createdAt).toLocaleString()}</td>
-                    <td>
-                        <button class="btn btn-outline-light btn-sm" onclick="editBoard(${post.id})">수정</button>
-                        <button class="btn btn-outline-light btn-sm" onclick="deleteBoard(${post.id})">삭제</button>
-                    </td>
+                    <td>${board.id}</td>
+                    <td class="post-title" onclick="window.location.href='/crud/board/content/${board.id}'">${board.title}</td>
+                    <td></td>
+                    <td>${new Date(board.createdAt).toLocaleString()}</td>
                 `;
+
+                // 작성자 셀 교체
+                tr.children[2].replaceWith(authorCell);
+
                 tbody.appendChild(tr);
             });
         } catch (err) {
             console.error('게시판 로드 실패', err);
         }
     }
-
-    function editPost(id) {
-        window.location.href = `/crud/board/edit/${id}`;
-    }
-
-
-
-    function getCookie(name) {
-        const value = `; ${document.cookie}`;
-        const parts = value.split(`; ${name}=`);
-        if (parts.length === 2) return parts.pop().split(';').shift();
-    }
-
     // 초기 로드
-    loadPosts();
+    loadBoards();
 </script>
 </html>
