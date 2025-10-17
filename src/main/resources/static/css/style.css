@@ -234,3 +234,22 @@ body {
     align-items: center;
     justify-content: center;
 }
+
+textarea:focus {
+    outline: none !important;
+    border-color: #66ccff !important;
+    box-shadow: 0 0 5px #66ccff;
+    background-color: #1e1e1e;
+    color: #fff;
+}
+
+.author-container {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.provider-icon {
+    border-radius: 50%;
+}
+
