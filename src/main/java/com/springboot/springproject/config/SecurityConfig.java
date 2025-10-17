@@ -4,11 +4,13 @@ import com.springboot.springproject.auth.handler.OAuth2LoginSuccessHandler;
 import com.springboot.springproject.auth.jwt.JwtAuthenticationFilter;
 import com.springboot.springproject.auth.service.CustomOAuth2UserService;
 import com.springboot.springproject.auth.service.CustomOidcUserService;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
@@ -32,10 +34,9 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/", "/css/**", "/js/**").permitAll()
                         .requestMatchers("/auth/login", "/auth/check").permitAll()
-                        .requestMatchers("/crud", "/kafka", "/ci").permitAll()
+                        .requestMatchers("/crud", "/crud/board/content/**","/kafka", "/ci").permitAll()
                         .requestMatchers("/error", "/error/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/board/**").permitAll()
-                        .requestMatchers("/api/board").authenticated()
                         .anyRequest().authenticated()
                 )
                 .oauth2Login(oauth2 -> oauth2
@@ -46,14 +47,29 @@ public class SecurityConfig {
                         )
                         .successHandler(successHandler) // JWT 발급 후 리디렉션
 
+                ).exceptionHandling(exception ->
+                        exception.authenticationEntryPoint(customAuthEntryPoint())
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .logout(logout -> logout
                         .logoutUrl("/auth/logout")
                         .logoutSuccessUrl("/") // 로그아웃 후 리디렉션
                         .deleteCookies("JSESSIONID", "JWT_TOKEN")
-                );;
+                );
         return http.build();
     }
+    @Bean
+    public AuthenticationEntryPoint customAuthEntryPoint() {
+        return (request, response, authException) -> {
+            String xhrHeader = request.getHeader("X-Requested-With");
 
+            if ("XMLHttpRequest".equals(xhrHeader)) {
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.setContentType("application/json;charset=UTF-8");
+                response.getWriter().write("{\"message\": \"로그인이 필요합니다.\"}");
+            } else {
+                response.sendRedirect("/auth/login");
+            }
+        };
+    }
 }
