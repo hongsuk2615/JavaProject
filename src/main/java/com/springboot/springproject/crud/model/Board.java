@@ -27,8 +27,8 @@ public class Board {
     private String authorId;
 
     private LocalDateTime createdAt;
-
     private LocalDateTime updatedAt;
+    private LocalDateTime deletedAt;
 
     @OneToMany(mappedBy = "board", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Reply> replies = new ArrayList<>();

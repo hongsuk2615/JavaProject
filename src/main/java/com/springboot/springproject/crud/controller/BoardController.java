@@ -1,11 +1,10 @@
 package com.springboot.springproject.crud.controller;
 
+import com.springboot.springproject.crud.dto.BoardDto;
 import com.springboot.springproject.crud.model.Board;
 import com.springboot.springproject.crud.service.BoardService;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
@@ -20,25 +19,23 @@ public class BoardController {
     }
 
     @GetMapping
-    public List<Board> list() {
+    public ResponseEntity<List<BoardDto>> list() {
         return boardService.findAll();
     }
 
     @GetMapping("/{id}")
-    public Board get(@PathVariable Long id) {
+    public ResponseEntity<BoardDto> get(@PathVariable Long id) {
         return boardService.findById(id);
     }
 
     @PostMapping
-    public Board create(@RequestBody Board board) {
+    public ResponseEntity<BoardDto> create(@RequestBody Board board) {
         var auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !auth.isAuthenticated()) {
             throw new RuntimeException("로그인이 필요합니다.");
         }
-        System.out.println(auth);
 
         String authorId = (String) auth.getPrincipal();
-        System.out.println(authorId);
         String[] parts = authorId.split("_");
         String email = parts[0];
         String provider = parts[1];
@@ -47,46 +44,54 @@ public class BoardController {
         board.setAuthorEmail(email);
         board.setAuthorProvider(provider);
 
-        return boardService.save(board);
+        Board saved = boardService.save(board);
+        return ResponseEntity.ok(boardService.toDto(saved)); // DTO 반환
     }
+
 
     // 게시글 수정
     @PutMapping("/{id}")
-    public Board update(@PathVariable Long id,
-                        @RequestBody Board updated,
-                        @AuthenticationPrincipal OAuth2User user) {
-        Board existing = boardService.findById(id);
-
-        String email = (String) user.getAttributes().get("email");
-        String provider = (String) user.getAttributes().get("provider");
-        String authorId = provider + "_" + email;
+    public ResponseEntity<BoardDto> update(@PathVariable Long id,
+                                           @RequestBody Board updated) {
+        Board existing = boardService.findByIdEntity(id); // 엔티티 반환 메서드
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated()) {
+            throw new RuntimeException("로그인이 필요합니다.");
+        }
+        String authorId = (String) auth.getPrincipal();
 
         if (!existing.getAuthorId().equals(authorId)) {
-            throw new RuntimeException("작성자만 수정할 수 있습니다.");
+            return ResponseEntity.status(403).body(null);
         }
 
         existing.setTitle(updated.getTitle());
         existing.setContent(updated.getContent());
         existing.setUpdatedAt(java.time.LocalDateTime.now());
 
-        return boardService.save(existing);
+        Board saved = boardService.save(existing);
+        return ResponseEntity.ok(boardService.toDto(saved));
     }
 
-    // 게시글 삭제
-    @DeleteMapping("/{id}")
-    public ResponseEntity<?> delete(@PathVariable Long id,
-                                    @AuthenticationPrincipal OAuth2User user) {
-        Board existing = boardService.findById(id);
+
+    @DeleteMapping("/{boardId}")
+    public ResponseEntity<String> delete(@PathVariable Long boardId) {
+        Board existing = boardService.findByIdEntity(boardId); // 엔티티 반환
         var auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated()) {
+            return ResponseEntity.status(401).body("로그인이 필요합니다.");
+        }
         String authorId = (String) auth.getPrincipal();
 
         if (!existing.getAuthorId().equals(authorId)) {
-            return ResponseEntity
-                    .status(403)
-                    .body("작성자만 삭제할 수 있습니다.");
+            return ResponseEntity.status(403).body("작성자만 삭제할 수 있습니다.");
+        }
+        try {
+            boardService.deleteBoard(boardId, authorId);
+            return ResponseEntity.ok("삭제되었습니다.");
+        } catch (IllegalAccessException e) {
+            return ResponseEntity.status(403).body(e.getMessage());
         }
 
-        boardService.delete(id);
-        return ResponseEntity.ok("삭제되었습니다.");
     }
+
 }
