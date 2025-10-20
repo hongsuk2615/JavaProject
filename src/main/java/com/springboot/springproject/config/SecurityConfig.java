@@ -37,6 +37,11 @@ public class SecurityConfig {
                         .requestMatchers("/crud", "/crud/board/content/**","/kafka", "/ci").permitAll()
                         .requestMatchers("/error", "/error/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/board/**").permitAll()
+                        .requestMatchers(
+                                "/ws/**",
+                                "/logs/stream",
+                                "/api/client-info"
+                        ).permitAll() // 웹소켓 채팅
                         .anyRequest().authenticated()
                 )
                 .oauth2Login(oauth2 -> oauth2
