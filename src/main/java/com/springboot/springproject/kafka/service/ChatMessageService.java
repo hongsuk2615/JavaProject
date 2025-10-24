@@ -2,7 +2,7 @@ package com.springboot.springproject.kafka.service;
 
 import com.springboot.springproject.kafka.dto.ChatMessageDto;
 import com.springboot.springproject.kafka.model.ChatMessage;
-import com.springboot.springproject.repository.ChatMessageRepository;
+import com.springboot.springproject.kafka.repository.ChatMessageRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

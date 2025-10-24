@@ -1,4 +1,4 @@
-package com.springboot.springproject.repository;
+package com.springboot.springproject.kafka.repository;
 
 import com.springboot.springproject.kafka.model.ChatMessage;
 import org.springframework.data.jpa.repository.JpaRepository;
